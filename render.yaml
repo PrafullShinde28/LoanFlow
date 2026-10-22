@@ -19,6 +19,6 @@ services:
       - key: MONGODB_URL
         sync: false
       - key: CLIENT_URL
-        sync: false
+        value: https://loan-flow-dkte.vercel.app
       - key: JWT_SECRET
         generateValue: true

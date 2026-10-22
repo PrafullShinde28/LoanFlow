@@ -1,6 +1,54 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+export const getApiBaseUrl = () => {
+  let url = import.meta.env.VITE_API_URL;
+
+  // Fallback if not configured in environment
+  if (!url || typeof url !== "string" || !url.trim()) {
+    if (
+      typeof window !== "undefined" &&
+      window.location &&
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1"
+    ) {
+      return "https://loanflow-3yif.onrender.com/api";
+    }
+    return "http://localhost:5000/api";
+  }
+
+  // Strip whitespace and quotes
+  url = url.trim().replace(/^["']|["']$/g, "");
+
+  // If missing protocol, prepend https:// (or http:// if localhost)
+  if (!/^https?:\/\//i.test(url)) {
+    url =
+      url.includes("localhost") || url.includes("127.0.0.1")
+        ? `http://${url}`
+        : `https://${url}`;
+  }
+
+  // Prevent mixed-content if the site is served over HTTPS
+  if (
+    typeof window !== "undefined" &&
+    window.location?.protocol === "https:" &&
+    url.startsWith("http://") &&
+    !url.includes("localhost")
+  ) {
+    url = url.replace(/^http:\/\//i, "https://");
+  }
+
+  // Strip trailing slashes
+  url = url.replace(/\/+$/, "");
+
+  // Ensure /api suffix
+  if (!url.endsWith("/api")) {
+    url = `${url}/api`;
+  }
+
+  return url;
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 const axiosClient = axios.create({
   baseURL: API_BASE_URL,

@@ -25,27 +25,48 @@ app.use(
   })
 );
 
-const allowedOrigins = (process.env.CLIENT_URL || "")
+const configuredOrigins = (process.env.CLIENT_URL || "")
   .split(",")
-  .map((origin) => origin.trim())
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
   .filter(Boolean);
 
-if (process.env.NODE_ENV !== "production") {
-  allowedOrigins.push(
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173"
-  );
-}
+const defaultOrigins = [
+  "https://loan-flow-dkte.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+];
+
+const allowedOrigins = Array.from(new Set([...configuredOrigins, ...defaultOrigins]));
 
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl, postman)
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) {
         return callback(null, true);
       }
-      return callback(new Error("Origin not allowed by CORS"));
+
+      const normalizedOrigin = origin.trim().replace(/\/+$/, "");
+
+      try {
+        const parsed = new URL(origin);
+        if (
+          allowedOrigins.includes(normalizedOrigin) ||
+          parsed.hostname.endsWith(".vercel.app") ||
+          parsed.hostname === "localhost" ||
+          parsed.hostname === "127.0.0.1" ||
+          process.env.NODE_ENV !== "production"
+        ) {
+          return callback(null, true);
+        }
+      } catch {
+        if (allowedOrigins.includes(normalizedOrigin)) {
+          return callback(null, true);
+        }
+      }
+
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true,
   })
@@ -54,6 +75,16 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
+
+// Root status check
+app.get("/", (req, res) => {
+  res.json({
+    status: "healthy",
+    app: "LOANFLOW API",
+    version: "1.0.0",
+    healthCheck: "/api/health",
+  });
+});
 
 // Serve static uploaded documents
 const uploadDir = path.resolve(process.cwd(), process.env.UPLOAD_DIR || "uploads");

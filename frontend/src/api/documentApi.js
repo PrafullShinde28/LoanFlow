@@ -1,4 +1,4 @@
-import axiosClient from "./axiosClient";
+import axiosClient, { API_BASE_URL } from "./axiosClient";
 
 export const documentApi = {
   getDocuments: (applicationId) =>
@@ -18,7 +18,6 @@ export const documentApi = {
     axiosClient.put(`/documents/${documentId}/reject`, { reason }),
 
   getDocumentUrl: (documentId) => {
-    const base = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-    return `${base}/documents/${documentId}/file`;
+    return `${API_BASE_URL}/documents/${documentId}/file`;
   },
 };
